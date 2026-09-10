@@ -308,6 +308,20 @@ class Client(models.Model):
 
     name = models.CharField(max_length=255)
 
+# composite primary keys
+class Product(models.Model):
+    name = models.CharField(max_length=100)
+
+
+class Order(models.Model):
+    reference = models.CharField(max_length=20, primary_key=True)
+
+
+class OrderLineItem(models.Model):
+    pk = models.CompositePrimaryKey("product_id", "order_id")
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    order = models.ForeignKey(Order, on_delete=models.CASCADE)
+    quantity = models.IntegerField()
 
 # Abstract models
 class Abs(models.Model):

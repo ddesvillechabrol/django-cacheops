@@ -1,3 +1,4 @@
+from cacheops.tree import dnfs
 from contextlib import contextmanager
 from functools import reduce
 import operator
@@ -1101,3 +1102,22 @@ class MultiDBInvalidationTests(BaseTestCase):
         brand = Brand.objects.using('slave').create()
         brand.labels.add(label)
         mock_invalidate_dict.assert_called_with(mock.ANY, mock.ANY, using='slave')
+
+
+class CompositePrimaryKeysTests(BaseTestCase):
+    """django 5.2 add composite primary key and introduce new Lookup using Tuple."""
+
+    def test_lookup_tuple_in(self):
+        """check that dnf take into account composite primary key research.
+        notes that since django 5.2, prefetch_related query use the tupleIn lookup.
+        """
+        product = Product.objects.create(name='apple')
+        order = Order.objects.create(reference='A75H')
+        item = OrderLineItem.objects.create(product=product, order=order, quantity=1)
+
+        # cache composite primary key filter
+        qs = OrderLineItem.objects.filter(pk__in=[(product.pk, order.pk)]).cache()
+        dnf_cond = dnfs(qs)
+        assert dnf_cond[item._meta.db_table][0]['product_id,order_id'] == ','.join(
+            [str(product.pk), order.pk]
+        )
