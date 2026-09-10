@@ -1103,7 +1103,7 @@ class MultiDBInvalidationTests(BaseTestCase):
         brand.labels.add(label)
         mock_invalidate_dict.assert_called_with(mock.ANY, mock.ANY, using='slave')
 
-
+@unittest.skipIf(django.VERSION < (5, 2), "Feature available for django 5.2+")
 class CompositePrimaryKeysTests(BaseTestCase):
     """django 5.2 add composite primary key and introduce new Lookup using Tuple."""
 
