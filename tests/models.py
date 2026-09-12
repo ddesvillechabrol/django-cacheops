@@ -314,10 +314,8 @@ if DJANGO_VERSION >= (5, 2):
     class Product(models.Model):
         name = models.CharField(max_length=100)
 
-
     class Order(models.Model):
         reference = models.CharField(max_length=20, primary_key=True)
-
 
     class OrderLineItem(models.Model):
         pk = models.CompositePrimaryKey("product_id", "order_id")

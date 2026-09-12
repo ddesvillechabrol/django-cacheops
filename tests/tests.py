@@ -1103,7 +1103,7 @@ class MultiDBInvalidationTests(BaseTestCase):
         brand.labels.add(label)
         mock_invalidate_dict.assert_called_with(mock.ANY, mock.ANY, using='slave')
 
-@unittest.skipIf(django.VERSION < (5, 2), "Feature available for django 5.2+")
+@unittest.skipIf(django.VERSION < (5, 2), 'Feature available for django 5.2+')
 class CompositePrimaryKeysTests(BaseTestCase):
     """django 5.2 add composite primary key and introduce new Lookup using Tuple."""
 
@@ -1118,6 +1118,20 @@ class CompositePrimaryKeysTests(BaseTestCase):
         # cache composite primary key filter
         qs = OrderLineItem.objects.filter(pk__in=[(product.pk, order.pk)]).cache()
         dnf_cond = dnfs(qs)
-        assert dnf_cond[item._meta.db_table][0]['product_id,order_id'] == ','.join(
-            [str(product.pk), order.pk]
-        )
+        # the dnf_cond result is like AND
+        model_dnf = dnf_cond[item._meta.db_table][0]
+        assert model_dnf['product_id'] == product.pk
+        assert model_dnf['order_id'] == order.pk
+
+        # run the query to add it in cache
+        list(qs.all())
+        with self.assertNumQueries(0):
+            items = list(qs.all())
+            assert items[0].quantity == 1
+
+        # update the quantity invalidate the cache
+        item.quantity = 2
+        item.save()
+        with self.assertNumQueries(1):
+            items = qs.all()
+            assert items[0].quantity == 2

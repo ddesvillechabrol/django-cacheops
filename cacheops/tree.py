@@ -53,24 +53,23 @@ def dnfs(qs):
         """
         if isinstance(where, Lookup):
             if hasattr(where.lhs, 'targets'):
-                attnames = ','.join(t.attname for t in where.lhs.targets)
                 # since django5.2, prefetch_related rely on TupleIn and ColPair
                 if (
                     isinstance(where, TupleIn)
                     and len(where.rhs) < settings.CACHEOPS_LONG_DISJUNCTION
                 ):
+                    # return result like AND condition
                     return {
                         frozenset(
-                            {
-                                (
-                                    where.lhs.alias,
-                                    attnames,
-                                    ','.join(str(v) for v in values),
-                                    True,
-                                )
-                            }
+                            (
+                                where.lhs.alias,
+                                target.attname,
+                                value,
+                                True,
+                            )
+                            for values in where.rhs
+                            for target, value in zip(where.lhs.targets, values)
                         )
-                        for values in where.rhs
                     }
                 else:
                     # TODO: add other tuple lookup
